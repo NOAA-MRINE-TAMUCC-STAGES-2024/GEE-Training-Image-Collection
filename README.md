@@ -9,3 +9,8 @@ The goal of this research is to identify manta rays using Google Earth Engine Se
 The spatial resolution of Google Earth Engine Sentinel Images is 10 meters per pixel. Because manta rays reach a maximum length of seven meters, this resolution is not sufficiently high to identify individual animals. However, it may be adequate for other, larger objects.
 
 ALL CODES PROVIDED SHOULD BE RUN IN GOOGLE COLABORATORY.
+
+
+This material is based upon work supported by the National Science Foundation under Grant No. DGE-2152131 ​
+
+Any opinions, findings, and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the National Science Foundation.
