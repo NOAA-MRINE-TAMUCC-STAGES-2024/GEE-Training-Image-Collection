@@ -88,7 +88,7 @@ folium.LayerControl().add_to(my_map)
 # Display the map
 my_map
 
-This code will create an excel file with the following columns: image name, area of interest, date, and time. The date will be formatted in "yyyy-mm-dd" and the time will be formatted in "hh:mm:ss".
+This code will create an excel file with the following columns: image name, area of interest, date, time, and Linear Ring. The date will be formatted in "yyyy-mm-dd" and the time will be formatted in "hh:mm:ss".
 
 import ee
 import pandas as pd
