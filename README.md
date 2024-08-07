@@ -7,3 +7,5 @@ This research was conducted by students of Texas A&M University--Corpus Christi'
 The goal of this research is to identify manta rays using Google Earth Engine Sentinel images. This repository is intended to serve as a repository of training images for an AI that identifies manta rays. The training images can be used in collaboration with any sightings data to narrow down the Google Earth Engine Sentinel images that should be inspected to create a training dataset.
 
 The spatial resolution of Google Earth Engine Sentinel Images is 10 meters per pixel. Because manta rays reach a maximum length of seven meters, this resolution is not sufficiently high to identify individual animals. However, it may be adequate for other, larger objects.
+
+ALL CODES PROVIDED SHOULD BE RUN IN GOOGLE COLABORATORY.
