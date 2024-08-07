@@ -1,0 +1,171 @@
+Our analysis showed that the months of March, April, and May had the most noted sightings of Giant Manta Rays.
+
+This code will create a new excel sheet called "google_images_statistically_likely.xlsx" that lists all of the images taken from GEE Sentinal satelites over our area of interest during March, April, and May.
+
+import os
+import pandas as pd
+
+# Paths to input files
+google_images_file = "/content/drive/MyDrive/Colab Notebooks/spreadsheet_of_google_images_meta_data.xlsx"
+
+try:
+    # Read Google images metadata with proper date parsing
+    google_images_df = pd.read_excel(google_images_file, parse_dates=['Date'])
+
+    # Filter Google images metadata to include only images from March, April, and May
+    selected_months = [3, 4, 5]  # March, April, May
+    google_images_filtered = google_images_df[google_images_df['Date'].dt.month.isin(selected_months)]
+
+    # Save filtered Google images metadata to a new Excel sheet
+    output_directory = "/content/drive/MyDrive/Colab Notebooks"
+    output_file = os.path.join(output_directory, "google_images_statistically_likely.xlsx")
+    print(f"Writing output file: {output_file}")
+
+    with pd.ExcelWriter(output_file) as writer:
+        google_images_filtered.to_excel(writer, sheet_name='Google Images Statistically Likely', index=False)
+
+    print(f"The new Excel file with the images taken in March, April, and May has been created at {output_file}")
+
+except Exception as e:
+    print(f"Error processing Google images metadata: {e}")
+
+
+The Florida coast is diagonal, meaning that some images may have been taken completely over land.
+
+This code gets rid of any images that do not include the Atlantic Ocean, by breaking down the Florida coast into many segments with minimum and maximum longitudinal values for each latitudinal range.
+
+This list of images that include the Atlantic Ocean will be saved into a new sheet of the same excel file. The sheet will be named "filtered_list"
+
+import pandas as pd
+from google.colab import drive
+from shapely.geometry import Polygon
+import ast
+import re
+
+# Mount Google Drive to access the Excel file
+drive.mount('/content/drive')
+
+# Define the file path
+file_path = '/content/drive/MyDrive/Colab Notebooks/google_images_statistically_likely.xlsx'
+
+# Read the Excel file and specific sheet
+df = pd.read_excel(file_path, sheet_name='list')  # Assuming the first sheet is already named 'list'
+
+# Convert the Linear_Ring strings to lists
+df['Linear_Ring'] = df['Linear_Ring'].apply(ast.literal_eval)
+
+# Define latitude ranges for different sections of the Atlantic coast of Florida
+latitude_ranges = {
+    'Key West to Miami': (24.5557, 25.7617),
+    'Miami to Fort Lauderdale': (25.7617, 26.1224),
+    'Fort Lauderdale to West Palm Beach': (26.1224, 26.7153),
+    'West Palm Beach to Boca Raton': (26.7153, 26.3683),
+    'Boca Raton to Delray Beach': (26.3683, 26.4615),
+    'Delray Beach to Boynton Beach': (26.4615, 26.5253),
+    'Boynton Beach to Lake Worth': (26.5253, 26.615),
+    'Lake Worth to Jupiter': (26.615, 26.9342),
+    'Jupiter to Stuart': (26.9342, 27.197),
+    'Stuart to Fort Pierce': (27.197, 27.4467),
+    'Fort Pierce to Vero Beach': (27.4467, 27.6386),
+    'Vero Beach to Melbourne': (27.6386, 28.0836),
+    'Melbourne to Cape Canaveral': (28.0836, 28.3922),
+    'Cape Canaveral to Daytona Beach': (28.3922, 29.2108),
+    'Daytona Beach to St. Augustine': (29.2108, 29.8947),
+    'St. Augustine to Jacksonville Beach': (29.8947, 30.2948)
+}
+
+# Function to preprocess latitude and longitude strings
+def preprocess_lat_long(lat_long_str):
+    # Remove degrees and direction, convert to float
+    numeric_part = re.findall(r'\d+\.\d+', lat_long_str)
+    if numeric_part:
+        numeric_value = float(numeric_part[0])
+        if 'S' in lat_long_str or 'W' in lat_long_str:
+            numeric_value = -numeric_value
+        return numeric_value
+    return None
+
+# Function to extract numeric latitude and filter images based on latitude and longitude boundaries
+def filter_images(row):
+    latitude_str = row['Latitude']
+    longitude_str = row['Longitude']
+
+    # Preprocess latitude and longitude values
+    latitude = preprocess_lat_long(latitude_str)
+    longitude = preprocess_lat_long(longitude_str)
+
+    if latitude is None or longitude is None:
+        return False  # Skip if latitude or longitude format is unexpected
+
+    # Determine the area of interest based on latitude
+    for area, (min_lat, max_lat) in latitude_ranges.items():
+        if min_lat <= latitude < max_lat:
+            # Adjust longitude bounds based on latitude to define the Atlantic Ocean visibility
+            if area == 'Key West to Miami':
+                min_longitude = -82.0
+                max_longitude = -80.0
+            elif area == 'Miami to Fort Lauderdale':
+                min_longitude = -80.5
+                max_longitude = -80.0
+            elif area == 'Fort Lauderdale to West Palm Beach':
+                min_longitude = -80.5
+                max_longitude = -80.0
+            elif area == 'West Palm Beach to Boca Raton':
+                min_longitude = -80.2
+                max_longitude = -79.5
+            elif area == 'Boca Raton to Delray Beach':
+                min_longitude = -80.2
+                max_longitude = -80.0
+            elif area == 'Delray Beach to Boynton Beach':
+                min_longitude = -80.1
+                max_longitude = -80.0
+            elif area == 'Boynton Beach to Lake Worth':
+                min_longitude = -80.1
+                max_longitude = -80.0
+            elif area == 'Lake Worth to Jupiter':
+                min_longitude = -80.2
+                max_longitude = -79.5
+            elif area == 'Jupiter to Stuart':
+                min_longitude = -80.4
+                max_longitude = -79.5
+            elif area == 'Stuart to Fort Pierce':
+                min_longitude = -80.7
+                max_longitude = -79.5
+            elif area == 'Fort Pierce to Vero Beach':
+                min_longitude = -80.9
+                max_longitude = -79.7
+            elif area == 'Vero Beach to Melbourne':
+                min_longitude = -80.9
+                max_longitude = -79.9
+            elif area == 'Melbourne to Cape Canaveral':
+                min_longitude = -81.2
+                max_longitude = -80.5
+            elif area == 'Cape Canaveral to Daytona Beach':
+                min_longitude = -81.2
+                max_longitude = -80.5
+            elif area == 'Daytona Beach to St. Augustine':
+                min_longitude = -81.5
+                max_longitude = -80.5
+            elif area == 'St. Augustine to Jacksonville Beach':
+                min_longitude = -81.7
+                max_longitude = -80.5
+
+            # Check if the image falls within the longitude bounds for the given latitude range
+            if min_longitude <= longitude <= max_longitude:
+                return True  # Image is within bounds
+            else:
+                return False  # Image is too far west for its latitude range
+
+    return False  # Default to False if latitude range not found
+
+# Apply the filter to the DataFrame
+df_filtered = df[df.apply(filter_images, axis=1)]
+
+# Save the filtered DataFrame to a new sheet in the same Excel file
+with pd.ExcelWriter(file_path, engine='openpyxl', mode='a') as writer:
+    df_filtered.to_excel(writer, sheet_name='filtered_list', index=False)
+
+# Check if 'filtered_list' is now available in the Excel file
+xls_updated = pd.ExcelFile(file_path)
+print(xls_updated.sheet_names)
+
