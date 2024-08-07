@@ -1,0 +1,53 @@
+Run some statistics on the "sightings" excel file to find out which 3 months had the most sightings and list all of the sightings in those 3 months in a new excel sheet named "sightings_statistics". then in sheet 2 of the excel file, list how many sightings are in each of those months for all of the years of data. And a third sheet that lists the top 3 years for those top 3 months.
+import os
+import pandas as pd
+
+# Verify the directory exists
+output_directory = "/content/drive/MyDrive/Colab Notebooks"
+if not os.path.exists(output_directory):
+    print(f"Directory does not exist: {output_directory}")
+else:
+    print(f"Directory exists: {output_directory}")
+
+# Read the Excel file
+input_file = os.path.join(output_directory, "sightings.xlsx")
+print(f"Reading input file: {input_file}")
+df = pd.read_excel(input_file)
+
+# Convert the 'Date' column to datetime
+df['Date'] = pd.to_datetime(df['Date'])
+
+# Extract the month and year from the 'Date' column
+df['Month'] = df['Date'].dt.month
+df['Year'] = df['Date'].dt.year
+
+# Find the three months with the most sightings
+top_months = df['Month'].value_counts().nlargest(3).index.tolist()
+print(f"Top 3 months with most sightings: {top_months}")
+
+# Filter the DataFrame to include only sightings from the top three months
+filtered_df = df[df['Month'].isin(top_months)]
+
+# Create a new DataFrame for sheet 2 with sightings per month for each year
+sightings_per_month_year = (
+    filtered_df.groupby(['Month', 'Year']).size().reset_index(name='Sightings')
+)
+
+# Sort the filtered data by Month and Year
+filtered_df_sorted = filtered_df.sort_values(by=['Month', 'Year'])
+sightings_per_month_year_sorted = sightings_per_month_year.sort_values(by=['Month', 'Year'])
+
+# Create a new DataFrame for sheet 3 with top 3 years for top 3 months
+top_years_per_month = filtered_df.groupby(['Month', 'Year']).size().reset_index(name='Sightings')
+top_years_per_month = top_years_per_month.groupby('Month').apply(lambda x: x.nlargest(3, 'Sightings')).reset_index(drop=True)
+
+# Create a new Excel file with the filtered sightings and sightings per month/year
+output_file = os.path.join(output_directory, "sightings_statistics.xlsx")
+print(f"Writing output file: {output_file}")
+
+with pd.ExcelWriter(output_file) as writer:
+    filtered_df_sorted.to_excel(writer, sheet_name='Top 3 Months Sightings', index=False)
+    sightings_per_month_year_sorted.to_excel(writer, sheet_name='Sightings Per Month', index=False)
+    top_years_per_month.to_excel(writer, sheet_name='Top 3 Years for Top 3 Months', index=False)
+
+print(f"The new Excel file with the sightings from the top 3 months, monthly sightings summary, and top 3 years for top 3 months has been created at {output_file}")
