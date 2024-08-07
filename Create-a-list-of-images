@@ -1,0 +1,168 @@
+The following code allows you to pull images from google earth engine into python code. Run this code in Google Colaboratory, make sure you are logged into the same email as you are Google Earth Engine.
+Your will need to make a project ID in GEE
+
+import ee
+import folium
+from folium import plugins
+
+# Authenticate and initialize the Earth Engine library
+ee.Authenticate()
+
+# Initialize with the specified project ID
+ee.Initialize(project='#enter your project ID here')
+
+# Function to mask clouds using the Sentinel-2 QA band
+def maskS2clouds(image):
+    qa = image.select('QA60')
+    cloudBitMask = 1 << 10
+    cirrusBitMask = 1 << 11
+    mask = qa.bitwiseAnd(cloudBitMask).eq(0).And(qa.bitwiseAnd(cirrusBitMask).eq(0))
+    return image.updateMask(mask).divide(10000)
+
+# Define the time period and region of interest, change to suit your needs
+start_date = '2020-01-01'
+end_date = '2020-01-30'
+region = ee.Geometry.Rectangle([-80.65, 28.35, -80.55, 28.45])
+
+# Load the Sentinel-2 image collection
+dataset = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED') \
+    .filterDate(start_date, end_date) \
+    .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20)) \
+    .filterBounds(region) \
+    .map(maskS2clouds)
+
+# Get the count of images
+image_count = dataset.size().getInfo()
+print(f'Number of images taken during the specified time range: {image_count}')
+
+# Print properties of each image
+images_info = dataset.getInfo()['features']
+for index, image_info in enumerate(images_info):
+    print(f'Image {index + 1} properties:', image_info['properties'])
+
+# Select the first image from the collection
+single_image = dataset.first()
+
+# Increase contrast, brightness, and sharpness
+visualization_params = {
+    'bands': ['B4', 'B3', 'B2'],
+    'min': 0.0,
+    'max': 10000.0,
+    'gamma': 0.000001
+}
+enhanced_image = single_image.visualize(**visualization_params)
+
+# Apply a sharpening filter
+laplacian_kernel = ee.Kernel.laplacian8()
+sharp_image = enhanced_image.convolve(laplacian_kernel)
+
+# Convert the sharp image to a map layer
+map_id_dict = sharp_image.getMapId()
+
+# Create a folium map object
+center = [28.4, -80.6]
+my_map = folium.Map(location=center, zoom_start=12)
+
+# Add the sharp image layer to the map
+folium.TileLayer(
+    tiles=map_id_dict['tile_fetcher'].url_format,
+    attr='Map Data &copy; <a href="https://earthengine.google.com">Google Earth Engine</a>',
+    name='Maximized Brightness, Contrast, and Sharpness',
+    overlay=True,
+    control=True
+).add_to(my_map)
+
+# Optional: Add original image for comparison
+original_map_id_dict = single_image.visualize(bands=['B4', 'B3', 'B2'], min=0.0, max=0.3).getMapId()
+folium.TileLayer(
+    tiles=original_map_id_dict['tile_fetcher'].url_format,
+    attr='Map Data &copy; <a href="https://earthengine.google.com">Google Earth Engine</a>',
+    name='Original Image',
+    overlay=True,
+    control=True
+).add_to(my_map)
+
+# Add layer control
+folium.LayerControl().add_to(my_map)
+
+# Display the map
+my_map
+
+This code will create an excel file with the following columns: image name, area of interest, date, and time. The date will be formatted in "yyyy-mm-dd" and the time will be formatted in "hh:mm:ss".
+
+import ee
+import pandas as pd
+from google.colab import drive
+
+# Authenticate and initialize the Earth Engine library
+ee.Initialize()
+
+# Mount Google Drive
+drive.mount('/content/drive')
+
+# Function to mask clouds using the Sentinel-2 QA band
+def maskS2clouds(image):
+    qa = image.select('QA60')
+    cloudBitMask = 1 << 10
+    cirrusBitMask = 1 << 11
+    mask = qa.bitwiseAnd(cloudBitMask).eq(0).And(qa.bitwiseAnd(cirrusBitMask).eq(0))
+    return image.updateMask(mask).divide(10000)
+
+# Define the time period and region of interest
+start_date = '2017-01-01'
+end_date = '2022-06-23'
+region = ee.Geometry.Rectangle([-75.44, 28.35, -81.80, 28.45])
+#southern tip of florida up to nothern boundary of north carolina
+#farthest western long of american east coast to farthest east long 2 miles off the coast
+
+# Load the Sentinel-2 image collection
+dataset = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED') \
+    .filterDate(start_date, end_date) \
+    .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20)) \
+    .filterBounds(region) \
+    .map(maskS2clouds)
+
+# Function to extract image metadata
+def getImageMetadata(image_info):
+    # Extract system:index and system:footprint properties
+    index = image_info['properties']['system:index']
+    footprint = image_info['properties']['system:footprint']['coordinates']
+
+    # Parse index to get date and time
+    index_parts = index.split('_')[0].split('T')
+    date = index_parts[0]
+    time = index_parts[1]
+
+    # Format date and time as required
+    date_formatted = f'{date[:4]}-{date[4:6]}-{date[6:]}'  # yyyy-mm-dd
+    time_formatted = f'{time[:2]}:{time[2:4]}:{time[4:]}'  # hh:mm:ss
+
+    return {
+        'image name': index,
+        'area of interest': 'Cape Canaveral, Florida',  # Example area of interest
+        'date': date_formatted,
+        'time': time_formatted,
+        'Linear Ring': footprint
+    }
+
+# Initialize an empty list to store metadata
+metadata_list = []
+
+# Iterate over the image collection and collect metadata
+images_info = dataset.getInfo()['features']
+for image_info in images_info:
+    metadata = getImageMetadata(image_info)
+    metadata_list.append(metadata)
+
+# Convert the list to a pandas DataFrame
+df = pd.DataFrame(metadata_list)
+
+# Define the file path in Google Drive. Put your desired filepath here
+file_path = '/content/drive/MyDrive/Colab Notebooks/spreadsheet_of_google_images_meta_data.xlsx'
+
+# Save the DataFrame to an Excel file
+df.to_excel(file_path, index=False)
+
+print(f'Saved metadata to {file_path}')
+
+
