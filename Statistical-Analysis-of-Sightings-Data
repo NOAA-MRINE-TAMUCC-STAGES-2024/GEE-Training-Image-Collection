@@ -55,3 +55,5 @@ with pd.ExcelWriter(output_file) as writer:
     top_years_per_month.to_excel(writer, sheet_name='Top 3 Years for Top 3 Months', index=False)
 
 print(f"The new Excel file with the sightings from the top 3 months, monthly sightings summary, and top 3 years for top 3 months has been created at {output_file}")
+
+Our analysis showed that the months of March, April, and May had the most noted sightings of Giant Manta Rays.
