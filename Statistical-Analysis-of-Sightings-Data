@@ -1,4 +1,8 @@
+CREAT YOUR LIST OF IMAGES FIRST
+You will need your list of GEE Sentinal images, and an excel file listing sightings data to complete this step. Our Excel files were named "spreadsheet_of_google_images_meta_data.xlsx" and "sightings.xlsx" respectively.
+This code will create an excel file called "sightings_statistics.xlsx"
 Run some statistics on the "sightings" excel file to find out which 3 months had the most sightings and list all of the sightings in those 3 months in a new excel sheet named "sightings_statistics". then in sheet 2 of the excel file, list how many sightings are in each of those months for all of the years of data. And a third sheet that lists the top 3 years for those top 3 months.
+
 import os
 import pandas as pd
 
