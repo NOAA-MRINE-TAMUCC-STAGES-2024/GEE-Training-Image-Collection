@@ -57,32 +57,3 @@ with pd.ExcelWriter(output_file) as writer:
 print(f"The new Excel file with the sightings from the top 3 months, monthly sightings summary, and top 3 years for top 3 months has been created at {output_file}")
 
 Our analysis showed that the months of March, April, and May had the most noted sightings of Giant Manta Rays.
-
-This code will create a new excel sheet called "google_images_statistically_likely.xlsx" that lists all of the images taken from GEE Sentinal satelites over our area of interest during March, April, and May.
-
-import os
-import pandas as pd
-
-# Paths to input files
-google_images_file = "/content/drive/MyDrive/Colab Notebooks/spreadsheet_of_google_images_meta_data.xlsx"
-
-try:
-    # Read Google images metadata with proper date parsing
-    google_images_df = pd.read_excel(google_images_file, parse_dates=['Date'])
-
-    # Filter Google images metadata to include only images from March, April, and May
-    selected_months = [3, 4, 5]  # March, April, May
-    google_images_filtered = google_images_df[google_images_df['Date'].dt.month.isin(selected_months)]
-
-    # Save filtered Google images metadata to a new Excel sheet
-    output_directory = "/content/drive/MyDrive/Colab Notebooks"
-    output_file = os.path.join(output_directory, "google_images_statistically_likely.xlsx")
-    print(f"Writing output file: {output_file}")
-
-    with pd.ExcelWriter(output_file) as writer:
-        google_images_filtered.to_excel(writer, sheet_name='Google Images Statistically Likely', index=False)
-
-    print(f"The new Excel file with the images taken in March, April, and May has been created at {output_file}")
-
-except Exception as e:
-    print(f"Error processing Google images metadata: {e}")
